@@ -1,9 +1,8 @@
-#!/usr/local/bin/python
+#!/usr/local/bin/python2
 #coding=UTF8
-#version: 1.0.0 (2015.03.23)
+#version: 2.6.22 (2016.06.22)
 
 import sys, socket, struct, time, logging, xmpp, MySQLdb, urllib2
-from ast import literal_eval
 from daemon import Daemon
 
 from aconfig import interface, port, sleep_int, nodata_int, logfile
@@ -49,8 +48,21 @@ class JabberBot:
         return alive
 
 # Функция подстановки значений переменных в строку
-def GetProcessedStr(datastr,r_event):
+def GetProcessedStr(datastr, r_event):
     return datastr.replace("{$device}",r_event['device']).replace("{$host}",r_event['host']).replace('{$metric}',r_event['metric']).replace("{$key}",r_event['key']).replace("{$val}",r_event['value'])
+
+# Функция преобразования формата метрик Graphite к формату Attractor
+def Graphite2Attractor(source):
+    try:
+	tmpstr, value, timestamp = source.split(' ')
+	tmpstr    = tmpstr.split('.')
+	device    = tmpstr[0]
+	host      = ".".join(tmpstr[1:5])
+	metric    = tmpstr[5]
+	key       = ".".join(tmpstr[6:])
+	return {'metric':metric, 'device':device, 'host': host, 'key': key, 'value':value, 'timestamp':timestamp}
+    except:
+	return False
 
 # Функция проверки истинности выполнения всех условий
 def CheckMetricTerms(metrics_storage, r_event, r_metricname, e_terms, last_val):
@@ -58,7 +70,7 @@ def CheckMetricTerms(metrics_storage, r_event, r_metricname, e_terms, last_val):
     tres = True
     match_found = False
     for term in e_terms:
-        # m_name - имя метрики из файла конфигурации, r_val - полученное значение, e_val - ожидаемое значение, , c_mname - имя для сравнения, c_last_val - прошлое значение для сравнения
+        # e_mname - имя метрики из файла конфигурации, r_val - полученное значение, e_val - ожидаемое значение, , c_mname - имя для сравнения, r_val_copy - прошлое значение для сравнения
         e_mname = GetProcessedStr(term[0],r_event)
         e_val = term[3]
 	# Проверяем с чем будем сравнивать ожидаемое значение. Значение "~" говорит, что будем работать с полученной метрикой, а отличное значение указывает на новое имя метрики
@@ -265,13 +277,13 @@ def main():
 	    tmp_events = events_raw.split("\n")
 	    for ev_item in tmp_events:
 		# Пробуем преобразовать данные в словарь
-		try:
-		    event = literal_eval(ev_item)
-		except:
-		    event = False
+		event = Graphite2Attractor(ev_item)
 		if event:
 		    events.append(event)
 		    recog_events += 1
+		else:
+		    if ev_item != '':
+			logging.info("WARNING! Unknown data format: %s", ev_item)
 	    del tmp_events
 	    events_raw = ''
 	    # Проверяем, получены ли новые события
@@ -317,8 +329,11 @@ def main():
 		    if (tmp_code>0) & (tmp_code in event_codes):
 			triggered_events += 1
 			if (useJabber and jbot_ok and (event['metric'] in JabberMetricsList)):
-			    jbot.SendMsg(GetProcessedStr(event_codes[tmp_code], event))
-			    #logging.info(GetProcessedStr(event_codes[tmp_code], event))
+			    try:
+				jbot.SendMsg(GetProcessedStr(event_codes[tmp_code], event))
+				#logging.info(GetProcessedStr(event_codes[tmp_code], event))
+			    except:
+				logging.info("ERROR (Jabber): Cannot send data to Jabber!")
 			    jCount += 1
 			if useMySQL:
 			    if send_query['count'] == 0:

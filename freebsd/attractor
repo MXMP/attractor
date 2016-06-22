@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# $FreeBSD$
+#
+# PROVIDE: ATTRACTOR
+# REQUIRE: NETWORK
+# REQUIRE: DAEMON %%RCLDCONFIG%%
+# BEFORE: LOGIN
+# KEYWORD: shutdown
+#
+# Add the following line to /etc/rc.conf to enable Attractor:
+#
+# attractor_enable="YES"
+#
+
+# Version: 2015.01.27
+
+. /etc/rc.subr
+
+name="attractor"
+rcvar=attractor_enable
+
+load_rc_config $name
+
+: ${attractor_enable="NO"}
+
+command_interpreter="/usr/local/bin/python2"
+command="/usr/local/etc/attractor/attractor.py"
+command_args="$1"
+start_precmd="attractor_prestart"
+stop_postcmd="attractor_poststop"
+attr_pidfile="/var/run/attractor.pid" # Do not change it, pls!
+
+attractor_prestart() {
+    chk_pid=`check_pidfile $attr_pidfile $command_interpreter` # Getting PID of process. If no such process PID will be empty.
+    if [ "$chk_pid" == "" ]; then				# If empty PID ...
+        {
+        if [ -f $attr_pidfile ]; then				# ... checking PID-file presence. If file exists...
+            {
+            /bin/rm -f $attr_pidfile				# ... remove this file.
+            }
+        fi
+        }
+    fi
+    }
+
+
+attractor_poststop() {
+    if [ -f $attr_pidfile ]; then # Checking PID-file presence. If file exists...
+        {
+        /bin/rm -f $attr_pidfile # ... remove this file
+        }
+    fi
+    }
+
+run_rc_command "$1"

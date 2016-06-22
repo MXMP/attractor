@@ -22,7 +22,7 @@ jps = "jpass"
 jcr = "nebula@conference.jabber.localhost"
 jnn = "attractor"
 
-JabberMetricsList = ['UP']
+JabberMetricsList = ['UP','TX','CT','CPU']
 
 # Настройки MySQL
 useMySQL = True
@@ -58,17 +58,17 @@ event_horizon={
 			["DES-3200-18_{$host}_{$metric}_27.100","~","<<","0"],
 			["DES-3200-18_{$host}_{$metric}_28.100","~","<<","0"],
 
-			["DES-3200-28/C1_{$host}_{$metric}_{$key}","~",">>","2"],
-			["DES-3200-28/C1_{$host}_{$metric}_25.1",  "~","<<","0"],
-			["DES-3200-28/C1_{$host}_{$metric}_26.1",  "~","<<","0"],
-			["DES-3200-28/C1_{$host}_{$metric}_27.1",  "~","<<","0"],
-			["DES-3200-28/C1_{$host}_{$metric}_28.1",  "~","<<","0"],
+			["DES-3200-28_C1_{$host}_{$metric}_{$key}","~",">>","2"],
+			["DES-3200-28_C1_{$host}_{$metric}_25.1",  "~","<<","0"],
+			["DES-3200-28_C1_{$host}_{$metric}_26.1",  "~","<<","0"],
+			["DES-3200-28_C1_{$host}_{$metric}_27.1",  "~","<<","0"],
+			["DES-3200-28_C1_{$host}_{$metric}_28.1",  "~","<<","0"],
 
-			["DES-3200-18/C1_{$host}_{$metric}_{$key}","~",">>","2"],
-			["DES-3200-18/C1_{$host}_{$metric}_25.1",  "~","<<","0"],
-			["DES-3200-18/C1_{$host}_{$metric}_26.1",  "~","<<","0"],
-			["DES-3200-18/C1_{$host}_{$metric}_27.1",  "~","<<","0"],
-			["DES-3200-18/C1_{$host}_{$metric}_28.1",  "~","<<","0"],
+			["DES-3200-18_C1_{$host}_{$metric}_{$key}","~",">>","2"],
+			["DES-3200-18_C1_{$host}_{$metric}_25.1",  "~","<<","0"],
+			["DES-3200-18_C1_{$host}_{$metric}_26.1",  "~","<<","0"],
+			["DES-3200-18_C1_{$host}_{$metric}_27.1",  "~","<<","0"],
+			["DES-3200-18_C1_{$host}_{$metric}_28.1",  "~","<<","0"],
 
 			["DES-3028_{$host}_{$metric}_{$key}","~",">>","1"],
 			["DES-3028_{$host}_{$metric}_25.100","~","<<","0"],
@@ -76,59 +76,77 @@ event_horizon={
 			["DES-3028_{$host}_{$metric}_27.100","~","<<","0"],
 			["DES-3028_{$host}_{$metric}_28.100","~","<<","0"]],'trigger':3,'skip':9,'reset':12,'code':3},
 
+    "UP"     :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~","<-","1"]],'trigger':1,'skip':0,'reset':0,'code':9},
+
+    "FW"     :{'terms':[["DES-3200-28_{$host}_{$metric}_{$key}",   "~","ni","1.85"],
+			["DES-3200-18_{$host}_{$metric}_{$key}",   "~","ni","1.85"],
+			["DES-3200-28_C1_{$host}_{$metric}_{$key}","~","ni","4.39"],
+			["DES-3200-18_C1_{$host}_{$metric}_{$key}","~","ni","4.39"],
+			["DES-3028_{$host}_{$metric}_{$key}",      "~","ni","2.94"]],'trigger':1,'skip':35,'reset':36,'code':12},
+
+    "TX"     :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>", "937500000"],
+			["{$device}_{$host}_{$metric}_{$key}","RX",">>","937500000"],
+			["{$device}_{$host}_{$metric}_25","~","<<","0"],
+			["{$device}_{$host}_{$metric}_26","~","<<","0"],
+			["{$device}_{$host}_{$metric}_27","~","<<","0"],
+			["{$device}_{$host}_{$metric}_28","~","<<","0"]],'trigger':3,'skip':3,'reset':6,'code':13},
+
+    "CT"     :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","60"]],'trigger':2,'skip':4,'reset':6,'code':14},
+
+    "CPU"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","50"]],'trigger':2,'skip':4,'reset':6,'code':15},
+
+    "RX"     :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>", "750000000"],
+			["{$device}_{$host}_{$metric}_25","~","<<","0"],
+			["{$device}_{$host}_{$metric}_26","~","<<","0"],
+			["{$device}_{$host}_{$metric}_27","~","<<","0"],
+			["{$device}_{$host}_{$metric}_28","~","<<","0"]],'trigger':3,'skip':3,'reset':6,'code':16},
+
+    # На практике не используется. Здесь оставлено как пример
     "P1S"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
 			["{$device}_{$host}_{$metric}_{$key}","~","<<","5"]],'trigger':3,'skip':3,'reset':6,'code':4},
-
+    # На практике не используется. Здесь оставлено как пример
     "P2S"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
 			["{$device}_{$host}_{$metric}_{$key}","~","<<","5"]],'trigger':3,'skip':3,'reset':6,'code':5},
-
+    # На практике не используется. Здесь оставлено как пример
     "P2S/C1" :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
 			["{$device}_{$host}_{$metric}_{$key}","~","<<","5"]],'trigger':3,'skip':3,'reset':6,'code':4},
-
+    # На практике не используется. Здесь оставлено как пример
     "P3S/C1" :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
 			["{$device}_{$host}_{$metric}_{$key}","~","<<","5"]],'trigger':3,'skip':3,'reset':6,'code':5},
-
+    # На практике не используется. Здесь оставлено как пример
     "P1L"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","0"],
 			["{$device}_{$host}_{$metric}_{$key}","~","<-","20"]],'trigger':1,'skip':5,'reset':6,'code':6},
-
+    # На практике не используется. Здесь оставлено как пример
     "P2L"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","0"],
 			["{$device}_{$host}_{$metric}_{$key}","~","<-","20"]],'trigger':1,'skip':5,'reset':6,'code':7},
-
+    # На практике не используется. Здесь оставлено как пример
     "P2L*"   :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",  ">>",  "0"],
 			["{$device}_{$host}_{$metric}_{$key}","P1L",">>",  "0"],
 			["{$device}_{$host}_{$metric}_{$key}","DS" ,"==",  "1"],
 			["{$device}_{$host}_{$metric}_{$key}","P1L","<>", "10"]],'trigger':3,'skip':3,'reset':6,'code':8},
-
+    # На практике не используется. Здесь оставлено как пример
     "P2L/C1" :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","0"],
 			["{$device}_{$host}_{$metric}_{$key}","~","<-","20"]],'trigger':1,'skip':5,'reset':6,'code':6},
-
+    # На практике не используется. Здесь оставлено как пример
     "P3L/C1" :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","0"],
 			["{$device}_{$host}_{$metric}_{$key}","~","<-","20"]],'trigger':1,'skip':5,'reset':6,'code':7},
-
+    # На практике не используется. Здесь оставлено как пример
     "P3L/C1*":{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",     ">>",  "0"],
 			["{$device}_{$host}_{$metric}_{$key}","P2L/C1",">>",  "0"],
 			["{$device}_{$host}_{$metric}_{$key}","DS"    ,"==",  "1"],
 			["{$device}_{$host}_{$metric}_{$key}","P2L/C1","<>", "10"]],'trigger':3,'skip':3,'reset':6,'code':8},
-
-    "UP"     :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~","<-","1"]],'trigger':1,'skip':0,'reset':0,'code':9},
-
+    # На практике не используется. Здесь оставлено как пример
     "P1L*"   :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","95"]],'trigger':3,'skip':3,'reset':6,'code':10},
-
+    # На практике не используется. Здесь оставлено как пример
     "P2L/C1*":{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","95"]],'trigger':3,'skip':3,'reset':6,'code':10},
-
+    # На практике не используется. Здесь оставлено как пример
     "DS*"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",  "==","3"],
 			["{$device}_{$host}_{$metric}_{$key}","P2S","==","0"],
 			["{$device}_{$host}_{$metric}_{$key}","P2L","==","0"]],'trigger':3,'skip':3,'reset':6,'code':11},
-
+    # На практике не используется. Здесь оставлено как пример
     "DS#"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",     "==","3"],
 			["{$device}_{$host}_{$metric}_{$key}","P2S/C1","==","0"],
 			["{$device}_{$host}_{$metric}_{$key}","P2L/C1","==","0"]],'trigger':3,'skip':3,'reset':6,'code':11},
-
-    "FW"     :{'terms':[["DES-3200-28_{$host}_{$metric}_{$key}",   "~","ni","1.85"],
-			["DES-3200-18_{$host}_{$metric}_{$key}",   "~","ni","1.85"],
-			["DES-3200-28/C1_{$host}_{$metric}_{$key}","~","ni","4.39"],
-			["DES-3200-18/C1_{$host}_{$metric}_{$key}","~","ni","4.39"],
-			["DES-3028_{$host}_{$metric}_{$key}",      "~","ni","2.94"]],'trigger':1,'skip':35,'reset':36,'code':12},
 }
 
 # Коды событий и соответствующий им текст, который будет использован при уведомлении о тревоге (alarm)
@@ -145,4 +163,8 @@ event_codes={
    10:"Длина кабеля на порту {$key} устройства {$host} [{$device}] превышает 95 метров!",
    11:"Длина кабеля на порту {$key} устройства {$host} [{$device}] не определена при поднятом линке!",
    12:"Устройство {$host} [{$device}] имеет устаревшую версию ПО - {$val}",
+   13:"Трафик на порту {$key} устройства {$host} [{$device}] превышает 25 мбит/сек в обоих направлениях!",
+   14:"Температура устройства {$host} [{$device}] - {$val} градусов!",
+   15:"Загрузка CPU на устройстве {$host} [{$device}] - {$val}%!",
+   16:"Трафик на порту {$key} устройства {$host} [{$device}] превышает 20 мбит/сек в направлении от абонента!",
 }
