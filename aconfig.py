@@ -89,7 +89,7 @@ event_horizon={
 			["{$device}_{$host}_{$metric}_25","~","<<","0"],
 			["{$device}_{$host}_{$metric}_26","~","<<","0"],
 			["{$device}_{$host}_{$metric}_27","~","<<","0"],
-			["{$device}_{$host}_{$metric}_28","~","<<","0"]],'trigger':3,'skip':3,'reset':6,'code':13},
+			["{$device}_{$host}_{$metric}_28","~","<<","0"]],'trigger':6,'skip':6,'reset':12,'code':13},
 
     "CT"     :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","60"]],'trigger':2,'skip':4,'reset':6,'code':14},
 
@@ -99,7 +99,7 @@ event_horizon={
 			["{$device}_{$host}_{$metric}_25","~","<<","0"],
 			["{$device}_{$host}_{$metric}_26","~","<<","0"],
 			["{$device}_{$host}_{$metric}_27","~","<<","0"],
-			["{$device}_{$host}_{$metric}_28","~","<<","0"]],'trigger':3,'skip':3,'reset':6,'code':16},
+			["{$device}_{$host}_{$metric}_28","~","<<","0"]],'trigger':6,'skip':6,'reset':12,'code':16},
 
     # На практике не используется. Здесь оставлено как пример
     "P1S"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
