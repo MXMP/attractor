@@ -5,7 +5,7 @@
 import sys, socket, struct, time, logging, xmpp, MySQLdb, urllib2
 from daemon import Daemon
 
-from aconfig import interface, port, sleep_int, nodata_int, logfile
+from aconfig import interface_ip, port, sleep_int, nodata_int, logfile
 from aconfig import event_horizon, event_codes, MetricNameTemplate
 from aconfig import useJabber, jid, jps, jcr, jnn, JabberMetricsList
 from aconfig import useMySQL, mysql_addr, mysql_user, mysql_pass
@@ -187,7 +187,7 @@ def main():
 
     # Пробуем открыть сокет
     try:
-	tcps.bind((interface,port))
+	tcps.bind((interface_ip,port))
     # Обрабатываем возможную ошибку сокета (сокет уже занят), делаем запись в лог и ноги :):
     except socket.error as err:
 	logging.error("Socket Error: {}. Exiting...".format(err.args[1]))
