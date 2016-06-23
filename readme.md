@@ -256,7 +256,7 @@ event_codes={
 + Запустите сервис командой **service attractor start**.
 
 ## Установка под Lunix
-+ Скопируйте файл **attractor** из директории '*linux*'  в '*/etc/init.d/*', а остальные файлы в '*/usr/local/etc/attractor/*'.
++ Скопируйте файл **attractor** из директории '*linux*' в '*/etc/init.d/*', а остальные файлы в '*/usr/local/etc/attractor/*'.
 + Запустите сервис командой **service attractor start**.
 
 ## Список изменений
