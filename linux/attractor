@@ -9,13 +9,13 @@
 # Description:       Start attractor daemon
 ### END INIT INFO
 
-PATH=/sbin:/usr/sbin:/bin:/usr/bin
+PATH="/sbin:/usr/sbin:/bin:/usr/bin"
 DESC="attractor"
-NAME=attractor
-DAEMON=/usr/bin/python2
+NAME="attractor"
+DAEMON="/usr/bin/python2"
 DAEMON_ARGS="/usr/local/etc/attractor/attractor.py"
-PIDFILE=/var/run/attractor.pid
-SCRIPTNAME=/etc/init.d/attractor
+PIDFILE="/var/run/attractor.pid"
+SCRIPTNAME="/etc/init.d/attractor"
 
 . /lib/init/vars.sh
 
