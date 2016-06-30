@@ -255,7 +255,7 @@ event_codes={
 + Добавьте строку **attractor_enable="YES"** в файл '*/etc/rc.conf*'.
 + Запустите сервис командой **service attractor start**.
 
-## Установка под Lunix
+## Установка под Linux
 + Скопируйте файл **attractor** из директории '*linux*' в '*/etc/init.d/*', а остальные файлы в '*/usr/local/etc/attractor/*'.
 + Запустите сервис командой **service attractor start**.
 
