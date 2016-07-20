@@ -1,6 +1,6 @@
 #!/usr/local/bin/python2
 #coding=UTF8
-#version: 2.6.22 (2016.06.22)
+#version: 2.7.20 (2016.07.20)
 
 import sys, socket, struct, time, logging, xmpp, MySQLdb, urllib2
 from daemon import Daemon
@@ -303,9 +303,9 @@ def main():
 		    mysql_cr  = mysql_conn.cursor()
 		finally:
 		    try_mysql = False
-		    send_query={'query':'','count':0,'total':0}
-	    if useOracleApex:
-		apex_query={'query':'','count':0,'total':0}
+	    # Определяем словари, содержащие счетчики событий для MySQL и Oracle Apex
+	    send_query = {'query':'', 'count':0, 'total':0}
+	    apex_query = {'query':'', 'count':0, 'total':0}
 	    # Обработка событий
 	    for event in events:
 		if event['metric'] in event_horizon:
