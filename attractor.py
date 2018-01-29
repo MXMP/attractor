@@ -1,18 +1,26 @@
-#!/usr/local/bin/python2
+#!/usr/bin/env python2
 #coding=UTF8
-#version: 2.7.20 (2016.07.20)
+#version: 4.1.30 (2018.01.30)
+# Формат 'version': <текущий год - год начала разработки>.<месяц последнего изменения>.<день последнего изменения>
 
 import sys, socket, struct, time, logging, xmpp, MySQLdb, urllib2
 from daemon import Daemon
-
-from aconfig import interface_ip, port, sleep_int, nodata_int, logfile
+from logging.handlers import RotatingFileHandler
+from aconfig import interface_ip, port, sleep_int, nodata_int, log_file, log_size, log_backupcount
 from aconfig import event_horizon, event_codes, MetricNameTemplate
 from aconfig import useJabber, jid, jps, jcr, jnn, JabberMetricsList
 from aconfig import useMySQL, mysql_addr, mysql_user, mysql_pass
 from aconfig import mysql_base, mysql_cset, mysql_tabl, mysql_chain_len
 from aconfig import useOracleApex, apex_url, apex_cmd, apex_chain_len
 
-logging.basicConfig(filename = logfile, level = logging.DEBUG, format = '%(asctime)s  %(message)s')
+# Настройка системы логирования сообщений
+log_handler = RotatingFileHandler(log_file, maxBytes = log_size, backupCount = log_backupcount)
+log_formatter = logging.Formatter('%(asctime)s Attractor [%(process)d]: %(message)s')
+log_handler.setFormatter(log_formatter)
+logger = logging.getLogger()
+logger.addHandler(log_handler)
+logger.setLevel(logging.DEBUG)
+
 
 class JabberBot:
     def __init__(self, jid, jps ,jcr, jnn):
@@ -173,7 +181,7 @@ def PostDataToOracleApex(apexurl):
     # Если подключение успешно, но результат неизвестен, ничего не возвращаем. Автоматически вернется None
 
 def main():
-    logging.info("Daemon 'Attractor' started...")
+    logger.info("INFO: Daemon 'Attractor' started...")
     # Создаем сокет для приема метрик
     tcps = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Переводим сокет в неблокирующий режим и задаем опции для более быстрого освобождения ресурсов
@@ -190,7 +198,7 @@ def main():
 	tcps.bind((interface_ip,port))
     # Обрабатываем возможную ошибку сокета (сокет уже занят), делаем запись в лог и ноги :):
     except socket.error as err:
-	logging.error("Socket Error: {}. Exiting...".format(err.args[1]))
+	logger.error("CRITICAL: Socket Error: {}. Exiting...".format(err.args[1]))
 	tcps.close()
 	sys.exit(2)
     else:
@@ -206,11 +214,11 @@ def main():
 	    if jbot.auth():
 		jbot.joinroom()
 		jbot_ok = True
-		logging.info("Connection to Jabber '{}' established!".format(jid.split("@")[1]))
+		logger.info("INFO: Connection to Jabber '{}' established.".format(jid.split("@")[1]))
 	    else:
-		logging.info("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
+		logger.info("ERROR: Can't log in Jabber with ID '{}'!".format(jid.split("@")[0]))
 	else:
-	    logging.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
+	    logger.info("ERROR: Can't connect to Jabber '{}'!".format(jid.split("@")[1]))
 
     try_mysql = True
     recog_events = 0
@@ -235,16 +243,16 @@ def main():
 		    pass
 		else:
 		    jbot_ok = False
-		    logging.info("WARNING: Not connected to Jabber! Trying to reconnect...")
+		    logger.info("WARNING: Not connected to Jabber! Trying to reconnect...")
 		    if jbot.connect():
 			if jbot.auth():
 			    jbot.joinroom()
 			    jbot_ok = True
-			    logging.info("Reconnection to Jabber '{}' established!".format(jid.split("@")[1]))
+			    logger.info("INFO: Connection to Jabber '{}' reestablished.".format(jid.split("@")[1]))
 			else:
-			    logging.info("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
+			    logger.info("ERROR: Can't log in Jabber with ID '{}'!".format(jid.split("@")[0]))
 		    else:
-			logging.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
+			logger.info("ERROR: Can't connect to Jabber '{}'!".format(jid.split("@")[1]))
 		if jbot_ok:
 		    jbot.proc()
 	jCount = 0
@@ -283,24 +291,29 @@ def main():
 		    recog_events += 1
 		else:
 		    if ev_item != '':
-			logging.info("WARNING! Unknown data format: %s", ev_item)
+			logger.info("WARNING: Unknown data format: %s!", ev_item)
 	    del tmp_events
 	    events_raw = ''
 	    # Проверяем, получены ли новые события
 	    if (recog_events>0):
-		logging.info("New events are recieved. Recognized {} entries.".format(recog_events))
+		logger.info("INFO: New events (metrics) are recieved. {} entries was recognized.".format(recog_events))
 		recog_events = 0
-	    # Пробуем подключиться к MySQL. Используем таймаут в 1 секунду
+	    # Задаем начальное значение переменной, которая содержит статус подключения к MySQL-серверу
+	    mysql_wready = False
 	    if useMySQL and try_mysql:
+		# Пробуем подключиться к базе данных MySQL. Используем таймаут в 1 секунду
 		try:
 		    mysql_conn = MySQLdb.connect(host=mysql_addr, user=mysql_user, passwd=mysql_pass, db=mysql_base, charset=mysql_cset, connect_timeout=1)
 		    mysql_conn.autocommit(True)
+		# Если возникла ошибка, сообщаем об этом в лог
 		except:
-		    logging.info('ERROR (MySQL): Cannot connect to server. :(')
+		    logger.info('ERROR: Cannot connect to MySQL! :(')
+		    mysql_wready = False
+		# Если ошибок не было пишем в лог об успехе и создаем 'курсор'
 		else:
-		    logging.info("Connection to MySQL Server '{}' (Write) established".format(mysql_addr))
-		    # Создаем 'курсор'. (Особая MySQLdb-шная магия)
+		    logger.info("INFO: Connection to MySQL Server '{}' established".format(mysql_addr))
 		    mysql_cr  = mysql_conn.cursor()
+		    mysql_wready = True
 		finally:
 		    try_mysql = False
 	    # Определяем словари, содержащие счетчики событий для MySQL и Oracle Apex
@@ -331,11 +344,11 @@ def main():
 			if (useJabber and jbot_ok and (event['metric'] in JabberMetricsList)):
 			    try:
 				jbot.SendMsg(GetProcessedStr(event_codes[tmp_code], event))
-				#logging.info(GetProcessedStr(event_codes[tmp_code], event))
+				#logger.info(GetProcessedStr(event_codes[tmp_code], event))
 			    except:
-				logging.info("ERROR (Jabber): Cannot send data to Jabber!")
+				logger.info("ERROR: Cannot send data to Jabber!")
 			    jCount += 1
-			if useMySQL:
+			if (useMySQL & mysql_wready):
 			    if send_query['count'] == 0:
 				send_query['query']= "insert into {0}.{1} ({1}.device,{1}.host,{1}.metric,{1}.key,{1}.value,{1}.event_code,{1}.event_text,{1}.datetime) values ".format(mysql_base,mysql_tabl)
 			    send_query['query'] += "('{0}','{1}','{2}','{3}','{4}',{5},'{6}','{7}'),".format(event['device'],event['host'],event['metric'],event['key'],event['value'],tmp_code,GetProcessedStr(event_codes[tmp_code],event),int(time.time()))
@@ -356,7 +369,7 @@ def main():
 				apex_query['count'] = 0
 				apex_query['query'] = ''
 	    # Проверяем, осталось ли что-то в буфере для MySQL. Если да - отправляем. После этого отключаемся от MySQL
-	    if useMySQL:
+	    if (useMySQL & mysql_wready):
 		if send_query['count'] > 0:
 		    if PostDataToMySQL(mysql_cr,send_query['query'][:-1]):
 			send_query['total'] += send_query['count']
@@ -374,13 +387,13 @@ def main():
 
 	    # Проверяем, есть ли события, для которых достигнуто необходимое количество срабатываний
 	    if (triggered_events>0):
-		logging.info("WARNING: New alerts triggered: {}.".format(triggered_events))
+		logger.info("WARNING: New alerts triggered: {}!".format(triggered_events))
 		triggered_events = 0
 	    # Пишем в лог сколько записей мы отправили в Jabber, MySQL и Orale Apex
-	    logging.info("Alerts sended to Jabber: {}. Alerts sended to MySQL: {}. Alerts sended to Oracle Apex: {}.".format(jCount,send_query['total'],apex_query['total']))
+	    logger.info("INFO: Alerts sended to Jabber: {}. Alerts sended to MySQL: {}. Alerts sended to Oracle Apex: {}.".format(jCount,send_query['total'],apex_query['total']))
 	    # Пишем в лог о завершении обработки
-	    logging.info("All events have been processed.")
-	    logging.info("-------")
+	    logger.info("INFO: All events have been processed.")
+	    logger.info("INFO: -------")
 	time.sleep(sleep_int*pause_ratio)
 
 # ------- Служебный блок: создание и управление демоном -------
@@ -390,7 +403,7 @@ class MyDaemon(Daemon):
         main()
 
 if __name__ == "__main__":
-    daemon = MyDaemon('/var/run/attractor.pid','/dev/null',logfile,logfile)
+    daemon = MyDaemon('/var/run/attractor.pid','/dev/null',log_file,log_file)
     if len(sys.argv) == 2:
         if   'start'     == sys.argv[1]:
             daemon.start()

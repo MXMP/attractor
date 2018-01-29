@@ -1,0 +1,52 @@
+# Пример мониторинга кабельной линии в портах коммутаторов D-Link.
+# Допустимо использование только на идеальных линиях, иначе возможны зависания порта.
+
+event_horizon={
+    "DS"     :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~","==","2"]],'trigger':3,'skip':9,'reset':12,'code':2},
+
+    "P1S"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
+			["{$device}_{$host}_{$metric}_{$key}","~","<<","5"]],'trigger':3,'skip':3,'reset':6,'code':4},
+
+    "P2S"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
+			["{$device}_{$host}_{$metric}_{$key}","~","<<","5"]],'trigger':3,'skip':3,'reset':6,'code':5},
+
+    "P2S/C1" :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
+			["{$device}_{$host}_{$metric}_{$key}","~","<<","5"]],'trigger':3,'skip':3,'reset':6,'code':4},
+
+    "P3S/C1" :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","1"],
+			["{$device}_{$host}_{$metric}_{$key}","~","<<","5"]],'trigger':3,'skip':3,'reset':6,'code':5},
+
+    "P1L"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","0"],
+			["{$device}_{$host}_{$metric}_{$key}","~","<-","20"]],'trigger':1,'skip':5,'reset':6,'code':6},
+
+    "P2L"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","0"],
+			["{$device}_{$host}_{$metric}_{$key}","~","<-","20"]],'trigger':1,'skip':5,'reset':6,'code':7},
+
+    "P2L*"   :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",  ">>",  "0"],
+			["{$device}_{$host}_{$metric}_{$key}","P1L",">>",  "0"],
+			["{$device}_{$host}_{$metric}_{$key}","DS" ,"==",  "1"],
+			["{$device}_{$host}_{$metric}_{$key}","P1L","<>", "10"]],'trigger':3,'skip':3,'reset':6,'code':8},
+
+    "P2L/C1" :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","0"],
+			["{$device}_{$host}_{$metric}_{$key}","~","<-","20"]],'trigger':1,'skip':5,'reset':6,'code':6},
+
+    "P3L/C1" :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","0"],
+			["{$device}_{$host}_{$metric}_{$key}","~","<-","20"]],'trigger':1,'skip':5,'reset':6,'code':7},
+
+    "P3L/C1*":{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",     ">>",  "0"],
+			["{$device}_{$host}_{$metric}_{$key}","P2L/C1",">>",  "0"],
+			["{$device}_{$host}_{$metric}_{$key}","DS"    ,"==",  "1"],
+			["{$device}_{$host}_{$metric}_{$key}","P2L/C1","<>", "10"]],'trigger':3,'skip':3,'reset':6,'code':8},
+
+    "P1L*"   :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","95"]],'trigger':3,'skip':3,'reset':6,'code':10},
+
+    "P2L/C1*":{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",">>","95"]],'trigger':3,'skip':3,'reset':6,'code':10},
+
+    "DS*"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",  "==","3"],
+			["{$device}_{$host}_{$metric}_{$key}","P2S","==","0"],
+			["{$device}_{$host}_{$metric}_{$key}","P2L","==","0"]],'trigger':3,'skip':3,'reset':6,'code':11},
+
+    "DS#"    :{'terms':[["{$device}_{$host}_{$metric}_{$key}","~",     "==","3"],
+			["{$device}_{$host}_{$metric}_{$key}","P2S/C1","==","0"],
+			["{$device}_{$host}_{$metric}_{$key}","P2L/C1","==","0"]],'trigger':3,'skip':3,'reset':6,'code':11},
+}
