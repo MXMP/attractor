@@ -1,7 +1,6 @@
 #!/usr/local/bin/python2
 # coding=UTF8
 
-import MySQLdb
 import logging
 import socket
 import struct
@@ -203,6 +202,10 @@ def send_msg_to_telegram(msg):
 
 def main():
     logging.info("Daemon 'Attractor' started...")
+
+    if useMySQL:
+        import MySQLdb
+
     # Создаем сокет для приема метрик
     tcps = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Переводим сокет в неблокирующий режим и задаем опции для более быстрого освобождения ресурсов
@@ -210,10 +213,9 @@ def main():
     tcps.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     tcps.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
 
-    # TODO: Добавить комментов, что это вообще такое
-    clients = []
-    events_raw = ''
-    metrics_storage = {}
+    clients = []  # список клиентов (входящих соединений)
+    events_raw = ''  # сырые данные, принятые при очередном цикле
+    metrics_storage = {}  # хранилище метрик, сюда складываются обработанные метрики со счетчиками
 
     # Пробуем открыть сокет
     try:
@@ -228,7 +230,7 @@ def main():
         tcps.listen(2)
 
     # Пробуем подключиться к Jabber
-    jbot_ok = False
+    jbot_ok = False  # флаг, живо ли соединение с Jabber
     if useJabber:
         # jid - JID, jps - password, jcr - chat room, jnn - nickname
         jbot = JabberBot(jid, jps, jcr, jnn)
@@ -242,37 +244,31 @@ def main():
         else:
             logging.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
 
-    # TODO: Добавить комментов, что это вообще такое
-    try_mysql = True
-    recog_events = 0
-    triggered_events = 0
-    timer = int(time.time())
-    timer_last_data = int(time.time())
-    pause_ratio = 1
+    try_mysql = True  # флаг, нужно ли пробовать открыть новое соединение с MySQL
+    recog_events = 0  # счетчик распознанных событий (события которые были преобразованы в формат Attractor)
+    triggered_events = 0  # счетчик сработавших условий
+    timer = int(time.time())  # время начала основного цикла программы (циклы по 5 секунд)
+    timer_last_data = int(time.time())  # время получения последних данных при опросе сокета
+    pause_ratio = 1  # множитель для паузы опроса сокета
 
     while True:
-        # TODO: Видимо, это список всех событий
-        events = []
+        events = []  # список всех распознанных событий
+
         # Каждые 5 секунд проверяем список клиентов и полученные события
         if int(time.time()) - timer >= 5:
             timer = int(time.time())
-            # TODO: Тут можно сильно зарефакторить
+
             # Убираем из списка неактивных клиентов
-            i = 0
-            while i < len(clients):
+            for client in clients:
                 try:
-                    clients[i].getpeername()
+                    client.getpeername()
                 except:
-                    clients.remove(clients[i])
-                else:
-                    i += 1
+                    logging.info("Client removed: {}".format(client))
+                    clients.remove(client)
 
             if useJabber:
-                # TODO: Уменьшить цикломатическую сложность
-                # Проверяем, есть ли подключение к Jabber
-                if jbot.is_alive:
-                    pass
-                else:
+                # Если подключение к Jabber не живо, то пробуем переподключиться
+                if not jbot.is_alive:
                     jbot_ok = False
                     logging.info("WARNING: Not connected to Jabber! Trying to reconnect...")
                     if jbot.connect():
@@ -287,8 +283,7 @@ def main():
                 if jbot_ok:
                     jbot.proc()
 
-        # TODO: Видимо, это что-то связанное с Jabber (может быть счетчик сообщений, отправленных в Jabber)
-        jCount = 0
+        jCount = 0  # счетчик сообщений, которые должны быть отправлены в Jabber
 
         # Пробуем принять подключение
         try:
@@ -358,6 +353,7 @@ def main():
             # Определяем словари, содержащие счетчики событий для MySQL и Oracle Apex
             send_query = {'query': '', 'count': 0, 'total': 0}
             apex_query = {'query': '', 'count': 0, 'total': 0}
+
             # Обработка событий
             for event in events:
                 if event['metric'] in event_horizon:
@@ -380,6 +376,7 @@ def main():
                         event_horizon[event['metric']]['skip'],
                         event_horizon[event['metric']]['reset'],
                         event_horizon[event['metric']]['code'])
+
                     # Обновляем хранилище метрик, записывая туда временные значения счетчик срабатывания
                     # условий и счетчика пропусков
                     metrics_storage[r_metricname] = {'lastval': event['value'], 'trigger': tmp_trig, 'skip': tmp_skip,
@@ -389,7 +386,6 @@ def main():
                         if useJabber and jbot_ok and (event['metric'] in JabberMetricsList):
                             try:
                                 jbot.send_msg(get_processed_str(event_codes[tmp_code], event))
-                            # logging.info(get_processed_str(event_codes[tmp_code], event))
                             except:
                                 logging.info("ERROR (Jabber): Cannot send data to Jabber!")
                             jCount += 1
