@@ -8,7 +8,6 @@ import struct
 import sys
 import time
 import urllib2
-import xmpp
 import requests
 
 from aconfig import event_horizon, event_codes, MetricNameTemplate
@@ -19,42 +18,9 @@ from aconfig import useMySQL, mysql_addr, mysql_user, mysql_pass
 from aconfig import useOracleApex, apex_url, apex_cmd, apex_chain_len
 from aconfig import useTelegram, telegram_tokens, telegram_url
 from daemon import Daemon
+from jabberbot import JabberBot
 
 logging.basicConfig(filename=logfile, level=logging.DEBUG, format='%(asctime)s  %(message)s')
-
-
-class JabberBot:
-    def __init__(self, jid, jps, jcr, jnn):
-        jid = xmpp.JID(jid)
-        self.user, self.server, self.password, self.jcr, self.jnn, = jid.getNode(), jid.getDomain(), jps, jcr, jnn
-
-    def connect(self):
-        self.conn = xmpp.Client(self.server, debug=[])
-        return self.conn.connect()
-
-    def auth(self):
-        return self.conn.auth(self.user, self.password)
-
-    def joinroom(self):
-        self.conn.sendInitPresence(1)
-        self.conn.send(xmpp.Presence(to="%s/%s" % (self.jcr, self.jnn)))
-
-    def proc(self):
-        self.conn.Process(1)
-
-    def send_msg(self, msg):
-        self.conn.send(xmpp.protocol.Message(self.jcr, msg, 'groupchat'))
-
-    def disconnect(self):
-        self.conn.send(xmpp.Presence(typ='unavailable'))
-
-    def is_alive(self):
-        try:
-            self.conn.send(xmpp.Presence(status=None, show=None))
-            alive = True
-        except IOError:
-            alive = False
-        return alive
 
 
 # Функция подстановки значений переменных в строку
@@ -232,7 +198,7 @@ def send_msg_to_telegram(msg):
                 except requests.TooManyRedirects:
                     logging.warning("Can't send message to Telegram: too many redirects")
                 except requests.HTTPError:
-                    logging.warning("Can't send message to Telegram: {} someting goes wrong".format(response.status_code))
+                    logging.warning("Can't send message to Telegram: {} something goes wrong".format(response.status_code))
 
 
 def main():
@@ -244,6 +210,7 @@ def main():
     tcps.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     tcps.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
 
+    # TODO: Добавить комментов, что это вообще такое
     clients = []
     events_raw = ''
     metrics_storage = {}
@@ -275,17 +242,21 @@ def main():
         else:
             logging.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
 
+    # TODO: Добавить комментов, что это вообще такое
     try_mysql = True
     recog_events = 0
     triggered_events = 0
     timer = int(time.time())
     timer_last_data = int(time.time())
     pause_ratio = 1
+
     while True:
+        # TODO: Видимо, это список всех событий
         events = []
         # Каждые 5 секунд проверяем список клиентов и полученные события
         if int(time.time()) - timer >= 5:
             timer = int(time.time())
+            # TODO: Тут можно сильно зарефакторить
             # Убираем из списка неактивных клиентов
             i = 0
             while i < len(clients):
@@ -295,7 +266,9 @@ def main():
                     clients.remove(clients[i])
                 else:
                     i += 1
+
             if useJabber:
+                # TODO: Уменьшить цикломатическую сложность
                 # Проверяем, есть ли подключение к Jabber
                 if jbot.is_alive:
                     pass
@@ -313,7 +286,10 @@ def main():
                         logging.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
                 if jbot_ok:
                     jbot.proc()
+
+        # TODO: Видимо, это что-то связанное с Jabber (может быть счетчик сообщений, отправленных в Jabber)
         jCount = 0
+
         # Пробуем принять подключение
         try:
             connect, addr = tcps.accept()
@@ -325,6 +301,7 @@ def main():
             connect.setblocking(0)
             connect.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
             clients.append(connect)
+
         # Пробуем получить данные с сокета, перебирая всех клиентов
         for client in clients:
             try:
@@ -334,12 +311,14 @@ def main():
                 pass
             else:
                 # Если клиент отключился, то recv вернет пустую строку. Закроем такой сокет.
-                if data == '': client.close()
+                if data == '':
+                    client.close()
                 # Складываем вместе данные, оставшиеся с прошлой обработки (могут быть пустыми), вместе с полученными
                 events_raw = events_raw + data
                 timer_last_data = int(time.time())
                 # Если данные поступают, начинаем опрашивать сокет чаще путем уменьшения интервала ожидания
                 pause_ratio = 0.01
+
         # Если истек интервал ожидания данных и сами данные не пустые, начинаем их обрабатывать
         if (int(time.time()) - timer_last_data >= nodata_int) & (len(events_raw) > 0):
             # Возвращаем прежнее значение коэффициента паузы для ожидания данных
