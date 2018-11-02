@@ -24,7 +24,7 @@ jnn = "attractor"
 JabberMetricsList = ['UP', 'TX', 'CT', 'CPU']
 
 # Выполнение GET-запроса при срабатывании правил
-use_external_urls = True
+use_external_urls = False
 external_urls = ['http://']
 external_requests_metrics = ['UP', 'TX', 'CT', 'CPU']
 
@@ -32,9 +32,10 @@ external_requests_metrics = ['UP', 'TX', 'CT', 'CPU']
 useTelegram = False
 telegram_tokens = ['']
 telegram_url = 'https://mybot.example.com/{}/send'
+telegram_metrics = ['UP', 'TX', 'CT', 'CPU']
 
 # Настройки MySQL
-useMySQL = True
+useMySQL = False
 mysql_addr = "attractor.localhost"
 mysql_user = "attractor"
 mysql_pass = "apass"
