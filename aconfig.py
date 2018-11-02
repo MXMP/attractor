@@ -23,10 +23,15 @@ jcr = "nebula@conference.jabber.localhost"
 jnn = "attractor"
 JabberMetricsList = ['UP', 'TX', 'CT', 'CPU']
 
+# Выполнение GET-запроса при срабатывании правил
+use_external_urls = True
+external_urls = ['http://']
+external_requests_metrics = ['UP', 'TX', 'CT', 'CPU']
+
 # Настройки Telegram
 useTelegram = False
 telegram_tokens = ['']
-telegram_url = 'https://'
+telegram_url = 'https://mybot.example.com/{}/send'
 
 # Настройки MySQL
 useMySQL = True

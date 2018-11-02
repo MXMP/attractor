@@ -9,6 +9,7 @@ import time
 import urllib2
 import requests
 
+# TODO: переделать импорты
 from aconfig import event_horizon, event_codes, MetricNameTemplate
 from aconfig import interface_ip, port, sleep_int, nodata_int, logfile
 from aconfig import mysql_base, mysql_cset, mysql_tabl, mysql_chain_len
@@ -16,6 +17,7 @@ from aconfig import useJabber, jid, jps, jcr, jnn, JabberMetricsList
 from aconfig import useMySQL, mysql_addr, mysql_user, mysql_pass
 from aconfig import useOracleApex, apex_url, apex_cmd, apex_chain_len
 from aconfig import useTelegram, telegram_tokens, telegram_url
+from aconfig import use_external_urls, external_urls, external_requests_metrics
 from daemon import Daemon
 from jabberbot import JabberBot
 
@@ -197,7 +199,33 @@ def send_msg_to_telegram(msg):
                 except requests.TooManyRedirects:
                     logging.warning("Can't send message to Telegram: too many redirects")
                 except requests.HTTPError:
-                    logging.warning("Can't send message to Telegram: {} something goes wrong".format(response.status_code))
+                    logging.warning(
+                        "Can't send message to Telegram: {} something goes wrong".format(response.status_code))
+
+
+def make_external_requests(message, device_ipaddr):
+    """
+    Отправляет сообщение в телеграм для соответствующего токена.
+
+    :param message: Сообщение которое нужно отправить
+    :param device_ipaddr: ip-адрес устройства, для которого сработал триггер
+    """
+    if message:
+        with requests.Session() as session:
+            for url in external_urls:
+                payload = {'message': message, 'device_ipaddr': device_ipaddr}
+                try:
+                    response = session.get(url, params=payload)
+                    response.raise_for_status()
+                except requests.ConnectionError:
+                    logging.warning("Can't send external request to {}: connection error".format(url))
+                except requests.Timeout:
+                    logging.warning("Can't send external request to {}: timeout".format(url))
+                except requests.TooManyRedirects:
+                    logging.warning("Can't send external request to {}: too many redirects".format(url))
+                except requests.HTTPError:
+                    logging.warning(
+                        "Can't send external request to {}: {} something goes wrong".format(url, response.status_code))
 
 
 def main():
@@ -263,7 +291,6 @@ def main():
                 try:
                     client.getpeername()
                 except:
-                    logging.info("Client removed: {}".format(client))
                     clients.remove(client)
 
             if useJabber:
@@ -284,6 +311,7 @@ def main():
                     jbot.proc()
 
         jCount = 0  # счетчик сообщений, которые должны быть отправлены в Jabber
+        external_requests_count = 0 # счетчик сообщений, которые должны быть отправлены путем запроса на внешний URL
 
         # Пробуем принять подключение
         try:
@@ -391,6 +419,9 @@ def main():
                             jCount += 1
                         if useTelegram:
                             send_msg_to_telegram(get_processed_str(event_codes[tmp_code], event))
+                        if use_external_urls and (event['metric'] in external_requests_metrics):
+                            make_external_requests(get_processed_str(event_codes[tmp_code], event), event['host'])
+                            external_requests_count += 1
                         if useMySQL:
                             if send_query['count'] == 0:
                                 send_query['query'] = """INSERT INTO {0}.{1} (
@@ -441,8 +472,10 @@ def main():
                 triggered_events = 0
             # Пишем в лог сколько записей мы отправили в Jabber, MySQL и Orale Apex
             logging.info(
-                "Alerts sended to Jabber: {}. Alerts sended to MySQL: {}. Alerts sended to Oracle Apex: {}.".format(
-                    jCount, send_query['total'], apex_query['total']))
+                "Alerts sended to Jabber: {}, to MySQL: {}, to Oracle Apex: {}, to external URLs: {}".format(jCount,
+                                                                                                             send_query['total'],
+                                                                                                             apex_query['total'],
+                                                                                                             external_requests_count))
             # Пишем в лог о завершении обработки
             logging.info("All events have been processed.")
             logging.info("-------")
