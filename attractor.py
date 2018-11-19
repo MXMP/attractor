@@ -7,6 +7,8 @@ import struct
 import sys
 import time
 import urllib2
+import subprocess
+
 import requests
 
 # TODO: переделать импорты
@@ -18,6 +20,7 @@ from aconfig import useMySQL, mysql_addr, mysql_user, mysql_pass
 from aconfig import useOracleApex, apex_url, apex_cmd, apex_chain_len
 from aconfig import useTelegram, telegram_tokens, telegram_url, telegram_metrics
 from aconfig import use_external_urls, external_urls, external_requests_metrics
+from aconfig import use_external_scripts, external_scripts, external_scripts_metrics
 from daemon import Daemon
 from jabberbot import JabberBot
 
@@ -228,6 +231,22 @@ def make_external_requests(message, device_ipaddr):
                         "Can't send external request to {}: {} something goes wrong".format(url, response.status_code))
 
 
+def call_external_scripts(event):
+    """
+    Запускает внешние скрипты.
+
+    :param event: событие
+    """
+
+    for command in external_scripts:
+        logging.info(event)
+        command.append(event['host'])
+        command.append(event['metric'])
+        command.append(event['key'])
+        command.append(event['value'])
+        subprocess.call(command)
+
+
 def main():
     logging.info("Daemon 'Attractor' started...")
 
@@ -313,6 +332,7 @@ def main():
         jCount = 0  # счетчик сообщений, которые должны быть отправлены в Jabber
         external_requests_count = 0  # счетчик сообщений, которые должны быть отправлены путем запроса на внешний URL
         telegram_events_count = 0  # счетчик событий, которые должны быть отправлены в Telegram
+        external_scripts_count = 0  # счетчик событий, которые должны быть отправлены во внешние скрипты
 
         # Пробуем принять подключение
         try:
@@ -424,6 +444,9 @@ def main():
                         if use_external_urls and (event['metric'] in external_requests_metrics):
                             make_external_requests(get_processed_str(event_codes[tmp_code], event), event['host'])
                             external_requests_count += 1
+                        if use_external_scripts and (event['metric'] in external_scripts_metrics):
+                            call_external_scripts(event)
+                            external_scripts_count += 1
                         if useMySQL:
                             if send_query['count'] == 0:
                                 send_query['query'] = """INSERT INTO {0}.{1} (
@@ -473,13 +496,13 @@ def main():
                 logging.info("WARNING: New alerts triggered: {}.".format(triggered_events))
                 triggered_events = 0
             # Пишем в лог сколько записей мы отправили в Jabber, MySQL и Orale Apex
-            logging.info(
-                "Alerts sended to Jabber: {}, to MySQL: {}, to Oracle Apex: {}, to external URLs: {}, to Telegram: {}".format(
-                    jCount,
-                    send_query['total'],
-                    apex_query['total'],
-                    external_requests_count,
-                    telegram_events_count))
+            logging.info("Alerts sended to Jabber: {}, to MySQL: {}, to Oracle Apex: {}, to external URLs: {},"
+                         " to external scripts: {}, to Telegram: {}".format(jCount,
+                                                                            send_query['total'],
+                                                                            apex_query['total'],
+                                                                            external_requests_count,
+                                                                            external_scripts_count,
+                                                                            telegram_events_count))
             # Пишем в лог о завершении обработки
             logging.info("All events have been processed.")
             logging.info("-------")
