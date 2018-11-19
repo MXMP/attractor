@@ -244,7 +244,14 @@ def call_external_scripts(event):
         command.append(event['metric'])
         command.append(event['key'])
         command.append(event['value'])
-        subprocess.call(command)
+        try:
+            subprocess.call(command)
+        except OSError:
+            logging.warning('Failed to execute external script [{}], file not found.'.format(command))
+        except ValueError:
+            logging.warning('Failed to execute external script [{}], wrong arguments.'.format(command))
+        except:
+            logging.warning('Failed to execute external script [{}], unknown error.'.format(command))
 
 
 def main():
