@@ -238,12 +238,15 @@ def call_external_scripts(event):
     :param event: событие
     """
 
-    for command in external_scripts:
+    for script_line in external_scripts:
+        command = script_line[0]
         logging.info(event)
-        command.append(event['host'])
-        command.append(event['metric'])
-        command.append(event['key'])
-        command.append(event['value'])
+        for m in script_line[1]:
+            try:
+                command.append(event[m])
+            except IndexError:
+                logging.warn('Failed to construct external script command.')
+                break
         try:
             subprocess.call(command)
         except OSError:

@@ -31,7 +31,7 @@ external_requests_metrics = ['UP', 'TX', 'CT', 'CPU']
 # Выполнение внешних скриптов при срабатывании правил
 use_external_scripts = False
 external_scripts = [
-    ['ls', '-l'],
+    [['ls', '-l'], ['host', 'metric', 'key']],
 ]
 external_scripts_metrics = ['UP']
 
