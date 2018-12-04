@@ -8,6 +8,7 @@ import sys
 import time
 import urllib2
 import subprocess
+from copy import copy
 
 import requests
 
@@ -239,8 +240,7 @@ def call_external_scripts(event):
     """
 
     for script_line in external_scripts:
-        command = script_line[0]
-        logging.info(event)
+        command = copy(script_line[0])
         for m in script_line[1]:
             try:
                 command.append(event[m])
