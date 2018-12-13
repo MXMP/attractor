@@ -36,16 +36,29 @@ def get_processed_str(datastr, r_event):
         "{$key}", r_event['key']).replace("{$val}", r_event['value'])
 
 
-# Функция преобразования формата метрик Graphite к формату Attractor
 def graphite2attractor(source):
+    """
+    Функция преобразования формата метрик Graphite к формату Attractor.
+
+    :param str source: строка с метрикой в формате Graphite
+    :return: метрика в формате Attractor (dict), в случае неудачи False
+    """
     try:
-        tmpstr, value, timestamp = source.split(' ')
-        tmpstr = tmpstr.split('.')
-        device = tmpstr[0]
-        host = ".".join(tmpstr[1:5])
-        metric = tmpstr[5]
-        key = ".".join(tmpstr[6:])
-        return {'metric': metric, 'device': device, 'host': host, 'key': key, 'value': value, 'timestamp': timestamp}
+        # Выдергиваем из входной строки метку времени, имя метрики и значение
+        tmp_metric = source.split()
+        timestamp = tmp_metric.pop()  # время, последний элемент
+        metric_name = tmp_metric.pop(0)  # имя метрики, первый элемент
+        value = '_'.join(tmp_metric)  # остальные элементы - значение, пробелы меняем на '_'
+
+        # "Дербаним" имя метрики, оттуда мы получим все нужные параметры
+        metric_dict = metric_name.split('.')
+        device_model = metric_dict[0]
+        host_ip = ".".join(metric_dict[1:5])
+        metric = metric_dict[5]
+        key = ".".join(metric_dict[6:])
+
+        return {'metric': metric, 'device': device_model, 'host': host_ip, 'key': key, 'value': value,
+                'timestamp': timestamp}
     except:
         return False
 
