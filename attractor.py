@@ -25,7 +25,9 @@ from aconfig import use_external_scripts, external_scripts, external_scripts_met
 from daemon import Daemon
 from jabberbot import JabberBot
 
-logging.basicConfig(filename=logfile, level=logging.DEBUG, format='%(asctime)s  %(message)s')
+logging.basicConfig(filename=logfile,format='%(asctime)s  %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 # Функция подстановки значений переменных в строку
@@ -174,9 +176,10 @@ def check_metric_counters(metrics_storage, r_metricname, test_m, e_trigger, e_sk
 # Функция отправки данных в базу MySQL. При успехе возвращает True
 def post_data_to_mysql(cr, send_query):
     try:
+        logger.debug("Trying to execute MySQL query: {}".format(send_query))
         cr.execute(send_query)
     except Exception as e:
-        logging.error(e.message)
+        logger.error(e.message)
         pass
     else:
         return True
@@ -211,13 +214,13 @@ def send_msg_to_telegram(msg):
                     response = session.get(telegram_url.format(token), params=payload)
                     response.raise_for_status()
                 except requests.ConnectionError:
-                    logging.warning("Can't send message to Telegram: connection error")
+                    logger.warning("Can't send message to Telegram: connection error")
                 except requests.Timeout:
-                    logging.warning("Can't send message to Telegram: timeout")
+                    logger.warning("Can't send message to Telegram: timeout")
                 except requests.TooManyRedirects:
-                    logging.warning("Can't send message to Telegram: too many redirects")
+                    logger.warning("Can't send message to Telegram: too many redirects")
                 except requests.HTTPError:
-                    logging.warning(
+                    logger.warning(
                         "Can't send message to Telegram: {} something goes wrong".format(response.status_code))
 
 
@@ -236,13 +239,13 @@ def make_external_requests(message, device_ipaddr):
                     response = session.get(url, params=payload)
                     response.raise_for_status()
                 except requests.ConnectionError:
-                    logging.warning("Can't send external request to {}: connection error".format(url))
+                    logger.warning("Can't send external request to {}: connection error".format(url))
                 except requests.Timeout:
-                    logging.warning("Can't send external request to {}: timeout".format(url))
+                    logger.warning("Can't send external request to {}: timeout".format(url))
                 except requests.TooManyRedirects:
-                    logging.warning("Can't send external request to {}: too many redirects".format(url))
+                    logger.warning("Can't send external request to {}: too many redirects".format(url))
                 except requests.HTTPError:
-                    logging.warning(
+                    logger.warning(
                         "Can't send external request to {}: {} something goes wrong".format(url, response.status_code))
 
 
@@ -259,20 +262,20 @@ def call_external_scripts(event):
             try:
                 command.append(event[m])
             except IndexError:
-                logging.warn('Failed to construct external script command.')
+                logger.warn('Failed to construct external script command.')
                 break
         try:
             subprocess.call(command)
         except OSError:
-            logging.warning('Failed to execute external script [{}], file not found.'.format(command))
+            logger.warning('Failed to execute external script [{}], file not found.'.format(command))
         except ValueError:
-            logging.warning('Failed to execute external script [{}], wrong arguments.'.format(command))
+            logger.warning('Failed to execute external script [{}], wrong arguments.'.format(command))
         except:
-            logging.warning('Failed to execute external script [{}], unknown error.'.format(command))
+            logger.warning('Failed to execute external script [{}], unknown error.'.format(command))
 
 
 def main():
-    logging.info("Daemon 'Attractor' started...")
+    logger.info("Daemon 'Attractor' started...")
 
     if useMySQL:
         import MySQLdb
@@ -293,7 +296,7 @@ def main():
         tcps.bind((interface_ip, port))
     # Обрабатываем возможную ошибку сокета (сокет уже занят), делаем запись в лог и ноги :):
     except socket.error as err:
-        logging.error("Socket Error: {}. Exiting...".format(err.args[1]))
+        logger.error("Socket Error: {}. Exiting...".format(err.args[1]))
         tcps.close()
         sys.exit(2)
     else:
@@ -309,11 +312,11 @@ def main():
             if jbot.auth():
                 jbot.joinroom()
                 jbot_ok = True
-                logging.info("Connection to Jabber '{}' established!".format(jid.split("@")[1]))
+                logger.info("Connection to Jabber '{}' established!".format(jid.split("@")[1]))
             else:
-                logging.info("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
+                logger.info("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
         else:
-            logging.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
+            logger.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
 
     try_mysql = True  # флаг, нужно ли пробовать открыть новое соединение с MySQL
     recog_events = 0  # счетчик распознанных событий (события которые были преобразованы в формат Attractor)
@@ -340,16 +343,16 @@ def main():
                 # Если подключение к Jabber не живо, то пробуем переподключиться
                 if not jbot.is_alive:
                     jbot_ok = False
-                    logging.info("WARNING: Not connected to Jabber! Trying to reconnect...")
+                    logger.info("WARNING: Not connected to Jabber! Trying to reconnect...")
                     if jbot.connect():
                         if jbot.auth():
                             jbot.joinroom()
                             jbot_ok = True
-                            logging.info("Reconnection to Jabber '{}' established!".format(jid.split("@")[1]))
+                            logger.info("Reconnection to Jabber '{}' established!".format(jid.split("@")[1]))
                         else:
-                            logging.info("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
+                            logger.info("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
                     else:
-                        logging.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
+                        logger.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
                 if jbot_ok:
                     jbot.proc()
 
@@ -402,12 +405,12 @@ def main():
                     recog_events += 1
                 else:
                     if ev_item != '':
-                        logging.info("WARNING! Unknown data format: %s", ev_item)
+                        logger.info("WARNING! Unknown data format: %s", ev_item)
             del tmp_events
             events_raw = ''
             # Проверяем, получены ли новые события
             if recog_events > 0:
-                logging.info("New events are recieved. Recognized {} entries.".format(recog_events))
+                logger.info("New events are recieved. Recognized {} entries.".format(recog_events))
                 recog_events = 0
             # Пробуем подключиться к MySQL. Используем таймаут в 1 секунду
             if useMySQL and try_mysql:
@@ -416,9 +419,9 @@ def main():
                                                  charset=mysql_cset, connect_timeout=1)
                     mysql_conn.autocommit(True)
                 except:
-                    logging.info('ERROR (MySQL): Cannot connect to server. :(')
+                    logger.info('ERROR (MySQL): Cannot connect to server. :(')
                 else:
-                    logging.info("Connection to MySQL Server '{}' (Write) established".format(mysql_addr))
+                    logger.info("Connection to MySQL Server '{}' (Write) established".format(mysql_addr))
                     # Создаем 'курсор'. (Особая MySQLdb-шная магия)
                     mysql_cr = mysql_conn.cursor()
                 finally:
@@ -460,7 +463,7 @@ def main():
                             try:
                                 jbot.send_msg(get_processed_str(event_codes[tmp_code], event))
                             except:
-                                logging.info("ERROR (Jabber): Cannot send data to Jabber!")
+                                logger.info("ERROR (Jabber): Cannot send data to Jabber!")
                             jCount += 1
                         if useTelegram and (event['metric'] in telegram_metrics):
                             send_msg_to_telegram(get_processed_str(event_codes[tmp_code], event))
@@ -517,10 +520,10 @@ def main():
 
             # Проверяем, есть ли события, для которых достигнуто необходимое количество срабатываний
             if triggered_events > 0:
-                logging.info("WARNING: New alerts triggered: {}.".format(triggered_events))
+                logger.info("WARNING: New alerts triggered: {}.".format(triggered_events))
                 triggered_events = 0
             # Пишем в лог сколько записей мы отправили в Jabber, MySQL и Orale Apex
-            logging.info("Alerts sended to Jabber: {}, to MySQL: {}, to Oracle Apex: {}, to external URLs: {},"
+            logger.info("Alerts sended to Jabber: {}, to MySQL: {}, to Oracle Apex: {}, to external URLs: {},"
                          " to external scripts: {}, to Telegram: {}".format(jCount,
                                                                             send_query['total'],
                                                                             apex_query['total'],
@@ -528,8 +531,8 @@ def main():
                                                                             external_scripts_count,
                                                                             telegram_events_count))
             # Пишем в лог о завершении обработки
-            logging.info("All events have been processed.")
-            logging.info("-------")
+            logger.info("All events have been processed.")
+            logger.info("-------")
         time.sleep(sleep_int * pause_ratio)
 
 
