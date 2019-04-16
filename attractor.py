@@ -179,9 +179,10 @@ def post_data_to_mysql(cr, send_query):
         logger.debug("Trying to execute MySQL query: {}".format(send_query))
         cr.execute(send_query)
     except Exception as e:
-        logger.error(e.message)
+        logger.error(e)
         pass
     else:
+        logger.debug("MySQL query {} successfully executed.".format(send_query))
         return True
 
 
