@@ -175,7 +175,8 @@ def check_metric_counters(metrics_storage, r_metricname, test_m, e_trigger, e_sk
 def post_data_to_mysql(cr, send_query):
     try:
         cr.execute(send_query)
-    except:
+    except Exception as e:
+        logging.error(e.message)
         pass
     else:
         return True
