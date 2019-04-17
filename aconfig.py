@@ -12,6 +12,9 @@ nodata_int = 5
 # Файл журнала:
 logfile = "/var/log/attractor.log"
 
+# Режим отладки
+debug_mode = False
+
 # Шаблон полного имени метрики
 MetricNameTemplate = "{$device}_{$host}_{$metric}_{$key}"
 

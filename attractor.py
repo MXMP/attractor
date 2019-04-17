@@ -12,22 +12,13 @@ from copy import copy
 
 import requests
 
-# TODO: переделать импорты
-from aconfig import event_horizon, event_codes, MetricNameTemplate
-from aconfig import interface_ip, port, sleep_int, nodata_int, logfile
-from aconfig import mysql_base, mysql_cset, mysql_tabl, mysql_chain_len
-from aconfig import useJabber, jid, jps, jcr, jnn, JabberMetricsList
-from aconfig import useMySQL, mysql_addr, mysql_user, mysql_pass
-from aconfig import useOracleApex, apex_url, apex_cmd, apex_chain_len
-from aconfig import useTelegram, telegram_tokens, telegram_url, telegram_metrics
-from aconfig import use_external_urls, external_urls, external_requests_metrics
-from aconfig import use_external_scripts, external_scripts, external_scripts_metrics
+from aconfig import *
 from daemon import Daemon
 from jabberbot import JabberBot
 
 logging.basicConfig(filename=logfile,format='%(asctime)s  %(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG if debug_mode else logging.INFO)
 
 
 # Функция подстановки значений переменных в строку
