@@ -306,9 +306,9 @@ def main():
                 jbot_ok = True
                 logger.info("Connection to Jabber '{}' established!".format(jid.split("@")[1]))
             else:
-                logger.info("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
+                logger.error("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
         else:
-            logger.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
+            logger.error("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
 
     try_mysql = True  # флаг, нужно ли пробовать открыть новое соединение с MySQL
     recog_events = 0  # счетчик распознанных событий (события которые были преобразованы в формат Attractor)
@@ -342,9 +342,9 @@ def main():
                             jbot_ok = True
                             logger.info("Reconnection to Jabber '{}' established!".format(jid.split("@")[1]))
                         else:
-                            logger.info("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
+                            logger.error("ERROR (Jabber): Can't log ID '{}'!".format(jid.split("@")[0]))
                     else:
-                        logger.info("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
+                        logger.error("ERROR (Jabber): Can't connect to '{}'!".format(jid.split("@")[1]))
                 if jbot_ok:
                     jbot.proc()
 
@@ -397,7 +397,7 @@ def main():
                     recog_events += 1
                 else:
                     if ev_item != '':
-                        logger.info("WARNING! Unknown data format: %s", ev_item)
+                        logger.error("WARNING! Unknown data format: %s", ev_item)
             del tmp_events
             events_raw = ''
             # Проверяем, получены ли новые события
@@ -411,7 +411,7 @@ def main():
                                                  charset=mysql_cset, connect_timeout=1)
                     mysql_conn.autocommit(True)
                 except:
-                    logger.info('ERROR (MySQL): Cannot connect to server. :(')
+                    logger.error('ERROR (MySQL): Cannot connect to server. :(')
                 else:
                     logger.info("Connection to MySQL Server '{}' (Write) established".format(mysql_addr))
                     # Создаем 'курсор'. (Особая MySQLdb-шная магия)
@@ -455,7 +455,7 @@ def main():
                             try:
                                 jbot.send_msg(get_processed_str(event_codes[tmp_code], event))
                             except:
-                                logger.info("ERROR (Jabber): Cannot send data to Jabber!")
+                                logger.error("ERROR (Jabber): Cannot send data to Jabber!")
                             jCount += 1
                         if useTelegram and (event['metric'] in telegram_metrics):
                             send_msg_to_telegram(get_processed_str(event_codes[tmp_code], event))
